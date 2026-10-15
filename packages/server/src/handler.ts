@@ -105,6 +105,7 @@ function sanitizeHabitInput(raw: unknown): HabitInput {
   if (typeof x.category === 'string' && (CATEGORIES as readonly string[]).includes(x.category)) input.category = x.category as HabitInput['category'];
   if (x.cadence === 'maintenance' || x.cadence === 'progressive') input.cadence = x.cadence;
   if (Array.isArray(x.days)) input.days = x.days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6) as number[];
+  if (Number.isInteger(x.perWeek) && (x.perWeek as number) >= 1 && (x.perWeek as number) <= 7) input.perWeek = x.perWeek as number;
   if (typeof x.isMain === 'boolean') input.isMain = x.isMain;
   if (x.privacy === 'private' || x.privacy === 'category' || x.privacy === 'party' || x.privacy === 'public') input.privacy = x.privacy;
   if (Number.isInteger(x.goalMinutes) && (x.goalMinutes as number) > 0 && (x.goalMinutes as number) <= 600) input.goalMinutes = x.goalMinutes as number;
@@ -412,6 +413,8 @@ function sanitizePatch(raw: unknown): Partial<HabitInput> & { archived?: boolean
   const out: Partial<HabitInput> & { archived?: boolean } = {};
   if (typeof x.name === 'string') out.name = x.name.slice(0, 60);
   if (Array.isArray(x.days)) out.days = x.days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6) as number[];
+  if (x.perWeek === null) out.perWeek = null;
+  else if (Number.isInteger(x.perWeek) && (x.perWeek as number) >= 1 && (x.perWeek as number) <= 7) out.perWeek = x.perWeek as number;
   if (x.privacy === 'private' || x.privacy === 'category' || x.privacy === 'party' || x.privacy === 'public') out.privacy = x.privacy;
   if (typeof x.isMain === 'boolean') out.isMain = x.isMain;
   if (typeof x.category === 'string' && (CATEGORIES as readonly string[]).includes(x.category)) out.category = x.category as HabitInput['category'];

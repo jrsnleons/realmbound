@@ -8,6 +8,8 @@ import {
   diminishingShare,
   findDuplicate,
   GameError,
+  scheduledPerWeek,
+  updateHabit,
   localDateTime,
   publicProfile,
   totalXpForLevel,
@@ -298,5 +300,38 @@ describe('economy and privacy', () => {
     const json = JSON.stringify(publicProfile(sim.state));
     expect(json).not.toMatch(/junk|Walk home|water/i);
     expect(json).not.toMatch(/mirror/);
+  });
+});
+
+describe('a fresh hero', () => {
+  it('starts with nothing equipped and earns the first gear by logging', () => {
+    const sim = Sim.start();
+    expect(sim.state.equipment).toEqual({});
+    expect(Object.keys(sim.state.inventory)).toHaveLength(0);
+    sim.act({ type: 'logHabit', habitId: sim.habit('Walk home').id });
+    expect(sim.state.inventory.traveler_chest).toBe(1);
+    expect(sim.state.feed.some((f) => f.kind === 'loot' && f.itemId === 'traveler_chest')).toBe(true);
+  });
+});
+
+describe('flexible schedules', () => {
+  it('keeps a weekly-goal habit out of the daily schedule and never marks it missed', () => {
+    const sim = Sim.start([{ name: 'Go for a run', perWeek: 3 }]);
+    const run = sim.habit('Go for a run');
+    expect(run.perWeek).toBe(3);
+    expect(run.days).toEqual([]);
+    for (let i = 1; i < 8; i++) sim.goTo(addDays(START, i));
+    const marks = Object.values(sim.state.history).flatMap((m) => Object.entries(m).filter(([id]) => id === run.id).map(([, v]) => v));
+    expect(marks).not.toContain('missed');
+  });
+
+  it('counts the weekly goal toward the weekly target and can switch back to fixed days', () => {
+    const { habit } = createHabit('11111111-1111-4111-8111-111111111111', { name: 'Stretch', perWeek: 4 }, [], START);
+    expect(scheduledPerWeek(habit)).toBe(4);
+    const back = updateHabit(habit, { perWeek: null, days: [1, 3] }, [habit]);
+    expect(back.perWeek).toBeUndefined();
+    expect(back.days).toEqual([1, 3]);
+    expect(scheduledPerWeek(back)).toBe(2);
+    expect(() => createHabit('22222222-2222-4222-8222-222222222222', { name: 'Stretch', perWeek: 9 }, [], START)).toThrow(GameError);
   });
 });

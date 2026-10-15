@@ -14,6 +14,8 @@ export interface Habit {
   cadence: Cadence;
   /** Weekdays the habit is scheduled (0 = Sunday). Empty = any day, never counted as missed. */
   days: number[];
+  /** Flexible schedule: do it this many times a week on any day. Days stay empty, so no day counts as missed. */
+  perWeek?: number;
   isMain: boolean;
   /** Habits that share a pool key share one daily reward pool (duplicate detection). */
   poolKey: string;

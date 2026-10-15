@@ -10,6 +10,8 @@ export interface HabitInput {
   category?: Category;
   cadence?: Cadence;
   days?: number[];
+  /** 1 to 7. Makes the habit flexible: any day counts, none is missed. */
+  perWeek?: number | null;
   isMain?: boolean;
   privacy?: Privacy;
   goalMinutes?: number;
@@ -24,6 +26,8 @@ export function validateHabitInput(input: HabitInput): void {
   if (input.category && !CATEGORIES.includes(input.category)) throw new GameError('bad_category', 'Unknown category.');
   if (input.days && (!Array.isArray(input.days) || input.days.some((d) => !Number.isInteger(d) || d < 0 || d > 6)))
     throw new GameError('bad_days', 'Days must be 0 (Sunday) to 6 (Saturday).');
+  if (input.perWeek != null && (!Number.isInteger(input.perWeek) || input.perWeek < 1 || input.perWeek > 7))
+    throw new GameError('bad_schedule', 'A weekly goal is 1 to 7 times.');
 }
 
 /**
@@ -53,7 +57,8 @@ export function createHabit(
     kind,
     category,
     cadence,
-    days: [...new Set(input.days ?? [0, 1, 2, 3, 4, 5, 6])].sort(),
+    days: input.perWeek ? [] : [...new Set(input.days ?? [0, 1, 2, 3, 4, 5, 6])].sort(),
+    ...(input.perWeek ? { perWeek: input.perWeek } : {}),
     isMain,
     poolKey: dup?.poolKey ?? `${category}:${id}`,
     createdOn: today,
@@ -73,6 +78,13 @@ export function updateHabit(habit: Habit, patch: Partial<HabitInput> & { archive
   const next: Habit = { ...habit };
   if (patch.name !== undefined) next.name = patch.name.trim();
   if (patch.days) next.days = [...new Set(patch.days)].sort();
+  if (patch.perWeek) {
+    next.perWeek = patch.perWeek;
+    next.days = [];
+  } else if (patch.perWeek === null) {
+    delete next.perWeek;
+    if (!patch.days) next.days = habit.days.length ? habit.days : [0, 1, 2, 3, 4, 5, 6];
+  }
   if (patch.privacy) next.privacy = patch.privacy;
   if (patch.category) next.category = patch.category;
   if (patch.cadence) next.cadence = patch.cadence;

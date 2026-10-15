@@ -58,7 +58,7 @@ export function Screen({
 
 export function NavButton({ onClick, children, label, bold }: { onClick: () => void; children: React.ReactNode; label: string; bold?: boolean }) {
   return (
-    <button aria-label={label} onClick={onClick} className={cx('pressable flex h-11 min-w-11 items-center justify-center rounded-full text-tint text-body', bold && 'font-semibold')}>
+    <button aria-label={label} onClick={onClick} className={cx('pressable flex h-11 min-w-11 items-center justify-center rounded-full px-2 text-tint text-body', bold && 'font-semibold')}>
       {children}
     </button>
   );
@@ -219,7 +219,7 @@ export function Segmented<T extends string>({ value, onChange, options, classNam
   return (
     <div className={cx('relative flex h-8 rounded-[9px] bg-fill2 p-[2px]', className)} role="tablist">
       <span
-        className="absolute bottom-[2px] top-[2px] rounded-[7px] bg-white shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] transition-transform duration-300 dark:bg-[#636366]"
+        className="absolute bottom-[2px] top-[2px] rounded-[7px] bg-[var(--seg-thumb)] shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] transition-transform duration-300"
         style={{ width: `calc((100% - 4px) / ${options.length})`, transform: `translateX(${idx * 100}%)`, transitionTimingFunction: 'var(--ease-spring)' }}
       />
       {options.map((o) => (

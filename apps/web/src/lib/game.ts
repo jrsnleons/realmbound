@@ -1,5 +1,5 @@
 import { CATEGORY_INFO, STAT_INFO, type Category } from '@realmbound/content';
-import { isScheduled, weekday, type Habit, type Mark, type PlayerState } from '@realmbound/game-engine';
+import { addDays, isScheduled, weekday, weekStart, type Habit, type Mark, type PlayerState } from '@realmbound/game-engine';
 
 export const WEEKDAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 export const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -24,6 +24,17 @@ export interface HabitToday {
   mark?: Mark;
   done: boolean;
   times: number;
+  /** Days this week (Monday to today) the habit was done. */
+  weekDone: number;
+}
+
+function doneThisWeek(state: PlayerState, habitId: string): number {
+  let n = 0;
+  for (let d = weekStart(state.today); d <= state.today; d = addDays(d, 1)) {
+    const m = state.history[d]?.[habitId];
+    if (m === 'done' || m === 'resisted') n++;
+  }
+  return n;
 }
 
 export function habitsToday(state: PlayerState, habits: Habit[]): HabitToday[] {
@@ -39,6 +50,7 @@ export function habitsToday(state: PlayerState, habits: Habit[]): HabitToday[] {
         mark,
         done: mark === 'done' || mark === 'resisted',
         times: state.daily.date === state.today ? (state.daily.pools[`h:${habit.id}`]?.count ?? 0) : 0,
+        weekDone: habit.perWeek ? doneThisWeek(state, habit.id) : 0,
       };
     });
 }

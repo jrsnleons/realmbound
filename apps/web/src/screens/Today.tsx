@@ -11,6 +11,7 @@ import { conditionOf, pixelAppearance } from '@/lib/sprites';
 import { useGame, useView } from '@/state/game';
 import { Icon } from '@/ui/icons';
 import { Button, Chip, cx, NavButton, ProgressBar, Ring, Row, Screen, Section, Sheet, Spinner, Stepper } from '@/ui/primitives';
+import { scheduleLabel, scheduleOf } from '@/ui/Schedule';
 import { HeroSprite } from '@/ui/Sprite';
 import { AddHabitSheet, HabitDetailSheet } from './HabitSheets';
 
@@ -28,7 +29,8 @@ export function TodayScreen({ go }: { go: (t: Tab) => void }) {
   const [detail, setDetail] = useState<string | null>(null);
   const items = useMemo(() => habitsToday(state, view.habits), [state, view.habits]);
   const scheduled = items.filter((i) => i.scheduled);
-  const other = items.filter((i) => !i.scheduled);
+  const flexible = items.filter((i) => !i.scheduled && i.habit.perWeek);
+  const other = items.filter((i) => !i.scheduled && !i.habit.perWeek);
   const doneCount = scheduled.filter((i) => i.done).length;
   const lines = NPC_LINES[state.worldState];
   const npcLine = lines[Number(state.today.slice(-2)) % lines.length];
@@ -77,8 +79,16 @@ export function TodayScreen({ go }: { go: (t: Tab) => void }) {
         )}
       </Section>
 
+      {flexible.length > 0 && (
+        <Section header="This week">
+          {flexible.map((it) => (
+            <HabitRow key={it.habit.id} item={it} onOpen={() => setDetail(it.habit.id)} />
+          ))}
+        </Section>
+      )}
+
       {other.length > 0 && (
-        <Section header="Any time">
+        <Section header="Not scheduled today">
           {other.map((it) => (
             <HabitRow key={it.habit.id} item={it} onOpen={() => setDetail(it.habit.id)} />
           ))}
@@ -109,7 +119,6 @@ function HeroCard({ onOpen }: { onOpen: () => void }) {
     <button onClick={onOpen} className="pressable mb-6 block w-full overflow-hidden rounded-[20px] bg-card text-left" style={{ boxShadow: 'var(--shadow)' }}>
       <div className="relative h-36 overflow-hidden" style={{ background: SKY[state.worldState] }}>
         <div className="absolute inset-x-0 bottom-0 h-9" style={{ background: GROUND[state.worldState], boxShadow: 'inset 0 4px 0 rgba(255,255,255,0.18)' }} />
-        <div className="absolute bottom-7 left-6 h-2.5 w-14 rounded-[50%] bg-black/20" />
         <div className="absolute bottom-5 left-6">
           <HeroSprite appearance={look} scale={3} condition={conditionOf(state)} />
         </div>
@@ -233,6 +242,7 @@ function HabitRow({ item, onOpen }: { item: HabitToday; onOpen: () => void }) {
     }
   };
 
+  const offDay = !item.scheduled && !habit.perWeek ? scheduleLabel(scheduleOf(habit)) : undefined;
   const subtitle =
     habit.kind === 'avoid'
       ? item.mark === 'resisted'
@@ -240,13 +250,17 @@ function HabitRow({ item, onOpen }: { item: HabitToday; onOpen: () => void }) {
         : item.mark === 'slipped'
           ? 'Slipped today. Tomorrow is a fresh start.'
           : 'Did you hold strong today?'
-      : obj
-        ? `${quest!.title} · ${Math.min(obj.count, obj.target)}/${obj.target}`
-        : item.times > 1
-          ? `Logged ${plural(item.times, 'time')} today`
-          : habit.isMain
-            ? 'Main Habit'
-            : undefined;
+      : habit.perWeek
+        ? `${Math.min(item.weekDone, habit.perWeek)} of ${habit.perWeek} this week${item.times > 1 ? ` · ${plural(item.times, 'log')} today` : ''}`
+        : obj
+          ? `${quest!.title} · ${Math.min(obj.count, obj.target)}/${obj.target}`
+          : item.times > 1
+            ? `Logged ${plural(item.times, 'time')} today`
+            : offDay
+              ? `${offDay}${habit.isMain ? ' · Main Habit' : ''}`
+              : habit.isMain
+                ? 'Main Habit'
+                : undefined;
 
   return (
     <div className="group relative flex min-h-[60px] items-center pl-4">

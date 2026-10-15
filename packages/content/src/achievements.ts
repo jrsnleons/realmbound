@@ -25,8 +25,9 @@ export interface AchievementDef {
 }
 
 export const ACHIEVEMENTS: AchievementDef[] = [
-  { id: 'first_step', name: 'First Step', description: 'Log your first habit.', rule: { kind: 'distinctDays', category: 'any', days: 1 } },
-  { id: 'one_week', name: 'Seven Suns', description: 'Log something on 7 different days.', rule: { kind: 'distinctDays', category: 'any', days: 7 } },
+  { id: 'first_step', name: 'First Step', description: 'Log your first habit.', rule: { kind: 'distinctDays', category: 'any', days: 1 }, rewardItemId: 'traveler_chest' },
+  { id: 'three_days', name: 'Finding a Rhythm', description: 'Log something on 3 different days.', rule: { kind: 'distinctDays', category: 'any', days: 3 }, rewardItemId: 'traveler_weapon' },
+  { id: 'one_week', name: 'Seven Suns', description: 'Log something on 7 different days.', rule: { kind: 'distinctDays', category: 'any', days: 7 }, rewardItemId: 'traveler_head' },
   { id: 'thirty_days', name: 'A Month of Mornings', description: 'Log something on 30 different days.', rule: { kind: 'distinctDays', category: 'any', days: 30 }, rewardTitle: 'the Steadfast' },
   { id: 'pathfinder', name: 'Pathfinder', description: 'Walk on 30 different days.', rule: { kind: 'distinctDays', category: 'movement', days: 30 }, rewardItemId: 'pathfinder_boots', rewardTitle: 'Pathfinder' },
   { id: 'dreamwalker', name: 'Dreamwalker', description: 'Meet your sleep goal on 25 different days.', rule: { kind: 'sleepGoalDays', days: 25 }, rewardItemId: 'dreamwalker_chest', rewardTitle: 'Dreamwalker' },

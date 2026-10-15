@@ -1,8 +1,12 @@
 @import 'tailwindcss';
 
-/* iOS semantic colours (Human Interface Guidelines), light and dark. */
+/*
+ * iOS semantic colours (Human Interface Guidelines), light and dark.
+ * Light is the base. Dark applies when the device is dark, when a host page marks itself dark
+ * (data-theme), or when the player picks Dark in Settings (data-rb-theme, which always wins).
+ */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg: #f2f2f7;
   --card: #ffffff;
   --card2: #f2f2f7;
@@ -13,7 +17,8 @@
   --sep: rgba(60, 60, 67, 0.29);
   --fill: rgba(120, 120, 128, 0.2);
   --fill2: rgba(120, 120, 128, 0.12);
-  --bar: rgba(249, 249, 249, 0.82);
+  --bar: rgba(249, 249, 249, 0.92);
+  --seg-thumb: #ffffff;
   --red: #ff3b30;
   --orange: #ff9500;
   --yellow: #ffcc00;
@@ -33,7 +38,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']):not([data-rb-theme='light']) {
+    color-scheme: dark;
     --bg: #000000;
     --card: #1c1c1e;
     --card2: #2c2c2e;
@@ -44,7 +50,8 @@
     --sep: rgba(84, 84, 88, 0.6);
     --fill: rgba(120, 120, 128, 0.36);
     --fill2: rgba(120, 120, 128, 0.24);
-    --bar: rgba(22, 22, 24, 0.8);
+    --bar: rgba(22, 22, 24, 0.9);
+    --seg-thumb: #636366;
     --red: #ff453a;
     --orange: #ff9f0a;
     --yellow: #ffd60a;
@@ -61,6 +68,45 @@
     --xp: #40c8e0;
     --shadow: none;
   }
+}
+
+:root[data-theme='dark']:not([data-rb-theme='light']),
+:root[data-rb-theme='dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --card: #1c1c1e;
+  --card2: #2c2c2e;
+  --elevated: #1c1c1e;
+  --label: #ffffff;
+  --label2: rgba(235, 235, 245, 0.6);
+  --label3: rgba(235, 235, 245, 0.3);
+  --sep: rgba(84, 84, 88, 0.6);
+  --fill: rgba(120, 120, 128, 0.36);
+  --fill2: rgba(120, 120, 128, 0.24);
+  --bar: rgba(22, 22, 24, 0.9);
+  --seg-thumb: #636366;
+  --red: #ff453a;
+  --orange: #ff9f0a;
+  --yellow: #ffd60a;
+  --green: #30d158;
+  --mint: #63e6e2;
+  --teal: #40c8e0;
+  --blue: #0a84ff;
+  --indigo: #5e5ce6;
+  --purple: #bf5af2;
+  --pink: #ff375f;
+  --brown: #ac8e68;
+  --gray: #98989d;
+  --gold: #ffcc00;
+  --xp: #40c8e0;
+  --shadow: none;
+}
+
+/* Colours that must follow the theme even when a host page sets its own text colour. */
+html,
+body {
+  background: var(--bg);
+  color: var(--label);
 }
 
 @theme inline {
@@ -195,8 +241,6 @@
 @layer base {
 html,
 body {
-  background: var(--bg);
-  color: var(--label);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
@@ -219,8 +263,16 @@ button {
 }
 
 input,
-textarea {
+textarea,
+select {
   font: inherit;
+  color: inherit;
+  caret-color: var(--tint);
+}
+
+::placeholder {
+  color: var(--label3);
+  opacity: 1;
 }
 
 .tabular {

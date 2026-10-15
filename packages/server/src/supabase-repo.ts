@@ -24,6 +24,7 @@ function toHabit(r: Row): Habit {
     category: r.category as Habit['category'],
     cadence: r.cadence as Habit['cadence'],
     days: (r.days as number[]) ?? [],
+    ...(r.per_week ? { perWeek: r.per_week as number } : {}),
     isMain: r.is_main as boolean,
     poolKey: r.pool_key as string,
     createdOn: r.created_on as string,

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { advanceLocalDay, localDayOffset } from '@/lib/client';
 import { setSound, soundOn } from '@/lib/feedback';
 import { store } from '@/lib/storage';
+import { getTheme, setTheme, type ThemePref } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useGame, useView } from '@/state/game';
 import { Icon } from '@/ui/icons';
@@ -21,12 +22,14 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
   const [typed, setTyped] = useState('');
   const [reduced, setReduced] = useState(false);
   const [sound, setSoundState] = useState(true);
+  const [theme, setThemeState] = useState<ThemePref>('auto');
   const deviceTz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
 
   useEffect(() => {
     if (!open) return;
     setReduced(store.get('rb-reduced-motion') === 'on');
     setSoundState(soundOn());
+    setThemeState(getTheme());
     if (mode === 'remote') void supabase().auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
   }, [open, mode]);
 
@@ -67,7 +70,7 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
       </Section>
 
       <Section header="Hero">
-        <Row icon={<Icon.Sparkles size={18} />} iconBg="var(--pink)" title="Appearance" chevron onClick={() => setLook(true)} />
+        <Row icon={<Icon.Sparkles size={18} />} iconBg="var(--pink)" title="Character" subtitle="Hair, face, skin and build" chevron onClick={() => setLook(true)} />
         <Row
           icon={<Icon.Moon size={18} />}
           iconBg="var(--indigo)"
@@ -122,6 +125,23 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
             />
           }
         />
+      </Section>
+
+      <Section header="Display" footer="Automatic follows your device.">
+        <div className="p-2">
+          <Segmented
+            value={theme}
+            onChange={(v) => {
+              setThemeState(v);
+              setTheme(v);
+            }}
+            options={[
+              { value: 'auto', label: 'Automatic' },
+              { value: 'light', label: 'Light' },
+              { value: 'dark', label: 'Dark' },
+            ]}
+          />
+        </div>
       </Section>
 
       <Section header="Experience">
@@ -221,7 +241,7 @@ function AppearanceSheet({ open, onClose }: { open: boolean; onClose: () => void
     <Sheet
       open={open}
       onClose={onClose}
-      title="Appearance"
+      title="Character"
       tall
       leading={
         <NavButton label="Cancel" onClick={onClose}>

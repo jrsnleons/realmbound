@@ -68,8 +68,8 @@ export function mostCommonFelt(s: HabitStats): Difficulty | undefined {
   return n > 0 ? best : undefined;
 }
 
-export function scheduledPerWeek(habit: Pick<Habit, 'days'>): number {
-  return habit.days.length || 3;
+export function scheduledPerWeek(habit: Pick<Habit, 'days' | 'perWeek'>): number {
+  return habit.perWeek ?? (habit.days.length || 3);
 }
 
 /**

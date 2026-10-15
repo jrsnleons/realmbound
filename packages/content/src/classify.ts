@@ -56,28 +56,20 @@ export const CATEGORY_EXEMPLARS: Record<Category, string[]> = {
   other: ['do something good today'],
 };
 
-export interface HabitSuggestion {
-  name: string;
-  kind: 'do' | 'avoid';
-  category: Category;
-  days: number[];
-}
-
-const WEEKDAYS = [1, 2, 3, 4, 5];
-const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
-
-/** Quick picks shown during onboarding. */
-export const HABIT_SUGGESTIONS: HabitSuggestion[] = [
-  { name: 'Walk home', kind: 'do', category: 'movement', days: [2, 3, 4, 5] },
-  { name: 'Meet my sleep goal', kind: 'do', category: 'sleep', days: EVERY_DAY },
-  { name: 'Avoid junk food after work', kind: 'avoid', category: 'nutrition', days: WEEKDAYS },
-  { name: 'Drink water', kind: 'do', category: 'hydration', days: EVERY_DAY },
-  { name: 'Study for 30 minutes', kind: 'do', category: 'learning', days: WEEKDAYS },
-  { name: 'Work out', kind: 'do', category: 'exercise', days: [1, 3, 5] },
-  { name: 'Read 20 pages', kind: 'do', category: 'learning', days: EVERY_DAY },
-  { name: 'Avoid late-night scrolling', kind: 'avoid', category: 'screen', days: EVERY_DAY },
-  { name: 'Take medication', kind: 'do', category: 'health', days: EVERY_DAY },
-  { name: 'Meditate', kind: 'do', category: 'mindfulness', days: EVERY_DAY },
-  { name: 'Work on my project', kind: 'do', category: 'craft', days: WEEKDAYS },
-  { name: 'Clean my desk', kind: 'do', category: 'chores', days: [0, 3] },
+/** Neutral starting points. Tapping one only fills the name; the player chooses everything else. */
+export const HABIT_IDEAS: string[] = [
+  'Exercise',
+  'Go for a walk',
+  'Stretch',
+  'Read',
+  'Study',
+  'Practice a skill',
+  'Meditate',
+  'Write in a journal',
+  'Drink water',
+  'Cook a meal',
+  'Tidy up',
+  'Go to bed on time',
+  'Limit screen time',
+  'Plan tomorrow',
 ];

@@ -8,7 +8,7 @@ import { categoryColor, categoryEmoji, plural } from '@/lib/game';
 import { useGame, useView } from '@/state/game';
 import { Icon } from '@/ui/icons';
 import { Alert, Button, Chip, cx, NavButton, Row, Section, Segmented, Sheet, TextField, Toggle } from '@/ui/primitives';
-import { DayPicker } from './Onboarding';
+import { DEFAULT_SCHEDULE, ScheduleEditor, scheduleOf, schedulePatch, schedulePayload, scheduleValid, type Schedule } from '@/ui/Schedule';
 
 const PRIVACY: { value: Privacy; label: string; hint: string }[] = [
   { value: 'private', label: 'Private', hint: 'Only you see this habit.' },
@@ -20,7 +20,7 @@ export function AddHabitSheet({ open, onClose }: { open: boolean; onClose: () =>
   const { call, toast } = useGame();
   const view = useView();
   const [name, setName] = useState('');
-  const [days, setDays] = useState([0, 1, 2, 3, 4, 5, 6]);
+  const [schedule, setSchedule] = useState<Schedule>(DEFAULT_SCHEDULE);
   const [category, setCategory] = useState<Category | null>(null);
   const [isMain, setIsMain] = useState(false);
   const [privacy, setPrivacy] = useState<Privacy>('category');
@@ -30,7 +30,7 @@ export function AddHabitSheet({ open, onClose }: { open: boolean; onClose: () =>
   useEffect(() => {
     if (open) {
       setName('');
-      setDays([0, 1, 2, 3, 4, 5, 6]);
+      setSchedule(DEFAULT_SCHEDULE);
       setCategory(null);
       setPrivacy('category');
       setIsMain(view.habits.filter((h) => h.isMain).length < 3);
@@ -38,13 +38,14 @@ export function AddHabitSheet({ open, onClose }: { open: boolean; onClose: () =>
   }, [open, view.habits]);
 
   const guess = name.trim().length >= 2 ? classifyHabit(name.trim()) : null;
+  const canSave = Boolean(guess) && scheduleValid(schedule);
   const effective = category ?? guess?.category ?? 'other';
   const isAvoid = guess?.kind === 'avoid';
   const mainsFull = view.habits.filter((h) => h.isMain).length >= 5;
 
   const save = async () => {
     setBusy(true);
-    const res = await call('createHabit', { habit: { name: name.trim(), days, isMain: isMain && !mainsFull, privacy, ...(category ? { category } : {}) } }, { idempotent: true });
+    const res = await call('createHabit', { habit: { name: name.trim(), ...schedulePayload(schedule), isMain: isMain && !mainsFull, privacy, ...(category ? { category } : {}) } }, { idempotent: true });
     setBusy(false);
     if (res.ok) {
       sfx.check();
@@ -67,8 +68,8 @@ export function AddHabitSheet({ open, onClose }: { open: boolean; onClose: () =>
         </NavButton>
       }
       trailing={
-        <NavButton label="Add" bold onClick={() => guess && !busy && void save()}>
-          <span className={cx(!guess && 'opacity-30')}>Add</span>
+        <NavButton label="Add" bold onClick={() => canSave && !busy && void save()}>
+          <span className={cx(!canSave && 'opacity-30')}>Add</span>
         </NavButton>
       }
     >
@@ -107,9 +108,9 @@ export function AddHabitSheet({ open, onClose }: { open: boolean; onClose: () =>
         </Section>
       )}
 
-      <Section header="Repeat" footer="Unscheduled days never count as missed.">
-        <div className="px-4 py-3">
-          <DayPicker days={days} onChange={setDays} />
+      <Section header="Repeat">
+        <div className="p-3">
+          <ScheduleEditor value={schedule} onChange={setSchedule} />
         </div>
       </Section>
 
@@ -123,7 +124,7 @@ export function AddHabitSheet({ open, onClose }: { open: boolean; onClose: () =>
         </div>
       </Section>
 
-      <Button className="w-full" disabled={!guess} loading={busy} onClick={() => void save()}>
+      <Button className="w-full" disabled={!canSave} loading={busy} onClick={() => void save()}>
         Add Habit
       </Button>
     </Sheet>
@@ -134,14 +135,14 @@ export function HabitDetailSheet({ habit, onClose }: { habit: Habit | null; onCl
   const { call, toast } = useGame();
   const view = useView();
   const [name, setName] = useState('');
-  const [days, setDays] = useState<number[]>([]);
+  const [schedule, setSchedule] = useState<Schedule>(DEFAULT_SCHEDULE);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (habit) {
       setName(habit.name);
-      setDays(habit.days.length ? habit.days : [0, 1, 2, 3, 4, 5, 6]);
+      setSchedule(scheduleOf(habit));
     }
   }, [habit]);
 
@@ -150,7 +151,8 @@ export function HabitDetailSheet({ habit, onClose }: { habit: Habit | null; onCl
   const rate = stats ? completionRate(stats) : undefined;
   const mark = view.state.history[view.state.today]?.[habit.id];
   const key = habit.kind === 'avoid' ? 'avoid' : habit.category;
-  const dirty = name.trim() !== habit.name || days.join() !== (habit.days.length ? habit.days : [0, 1, 2, 3, 4, 5, 6]).join();
+  const original = scheduleOf(habit);
+  const dirty = (name.trim() !== habit.name || schedule.perWeek !== original.perWeek || schedule.days.join() !== original.days.join()) && name.trim().length >= 2 && scheduleValid(schedule);
 
   const logFelt = async (felt: 'easy' | 'normal' | 'hard') => {
     setBusy(felt);
@@ -166,7 +168,7 @@ export function HabitDetailSheet({ habit, onClose }: { habit: Habit | null; onCl
 
   const save = async () => {
     setBusy('save');
-    const res = await call('updateHabit', { habitId: habit.id, patch: { name: name.trim(), days } }, { idempotent: true });
+    const res = await call('updateHabit', { habitId: habit.id, patch: { name: name.trim(), ...schedulePatch(schedule) } }, { idempotent: true });
     setBusy(null);
     if (res.ok) toast('Saved', 'success');
   };
@@ -208,11 +210,13 @@ export function HabitDetailSheet({ habit, onClose }: { habit: Habit | null; onCl
         </Section>
       )}
 
-      <Section header="Edit">
+      <Section header="Name">
         <TextField value={name} onChange={setName} maxLength={60} label="Habit name" />
-        <div className="ml-4 h-px bg-sep" />
-        <div className="px-4 py-3">
-          <DayPicker days={days} onChange={setDays} />
+      </Section>
+
+      <Section header="Repeat">
+        <div className="p-3">
+          <ScheduleEditor value={schedule} onChange={setSchedule} />
         </div>
       </Section>
       {dirty && (

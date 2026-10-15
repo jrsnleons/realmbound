@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { haptic } from '@/lib/feedback';
 import { store } from '@/lib/storage';
+import { startTheme } from '@/lib/theme';
 import { Auth, Welcome } from '@/screens/Auth';
 import { HeroScreen } from '@/screens/Hero';
 import { Onboarding } from '@/screens/Onboarding';
@@ -45,6 +46,10 @@ export function App() {
 
 function Shell() {
   const { phase } = useGame();
+
+  useEffect(() => {
+    startTheme();
+  }, []);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {

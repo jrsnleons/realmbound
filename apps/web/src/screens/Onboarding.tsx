@@ -1,22 +1,24 @@
 'use client';
 
-import { CATEGORY_INFO, HABIT_SUGGESTIONS, STAT_INFO } from '@realmbound/content';
+import { CATEGORY_INFO, HABIT_IDEAS, STAT_INFO } from '@realmbound/content';
 import { classifyHabit } from '@realmbound/game-engine';
 import { HAIR_COLORS, HAIR_STYLE_NAMES, SKIN_TONES, toHex, type Direction } from '@realmbound/pixel';
 import { useMemo, useState } from 'react';
 import { haptic, sfx } from '@/lib/feedback';
-import { categoryColor, categoryEmoji, daysLabel, WEEKDAY_SHORT } from '@/lib/game';
+import { categoryColor, categoryEmoji } from '@/lib/game';
 import { pixelAppearance, portraitUrl } from '@/lib/sprites';
 import { useGame } from '@/state/game';
 import { Icon } from '@/ui/icons';
 import { Button, Chip, cx, Section, Segmented, Stepper, TextField } from '@/ui/primitives';
+import { DEFAULT_SCHEDULE, ScheduleEditor, scheduleLabel, schedulePayload, scheduleValid, type Schedule } from '@/ui/Schedule';
 import { HeroSprite } from '@/ui/Sprite';
 
 export type Look = { bodyTier: 1 | 2 | 3; skinTone: number; hairStyle: number; hairColor: number; face: number };
-type Pick = { name: string; days: number[]; kind?: 'do' | 'avoid' };
+type Pick = { name: string; schedule: Schedule };
 
 const STEPS = ['intro', 'name', 'look', 'habits', 'sleep', 'ready'] as const;
-const STARTER_GEAR = { head: 'traveler_head', chest: 'traveler_chest', weapon: 'traveler_weapon' };
+/** New heroes start with nothing equipped; their first gear is earned. */
+const NO_GEAR = {};
 
 export function Onboarding() {
   const { call, signOut, mode } = useGame();
@@ -46,7 +48,7 @@ export function Onboarding() {
         username,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         appearance: { ...look, bodyMode: 'custom' },
-        habits: picks.map((p) => ({ name: p.name, days: p.days })),
+        habits: picks.map((p) => ({ name: p.name, ...schedulePayload(p.schedule) })),
         sleepGoalHours: sleepGoal,
       },
       { quiet: true },
@@ -162,7 +164,7 @@ function Swatch({ color, selected, onClick, label }: { color: string; selected: 
   );
 }
 
-export function LookStep({ look, setLook, equipment = STARTER_GEAR, showTitle = true }: { look: Look; setLook: (l: Look) => void; equipment?: Partial<Record<string, string>>; showTitle?: boolean }) {
+export function LookStep({ look, setLook, equipment = NO_GEAR, showTitle = true }: { look: Look; setLook: (l: Look) => void; equipment?: Partial<Record<string, string>>; showTitle?: boolean }) {
   const [dir, setDir] = useState<Direction>('down');
   const preview = useMemo(() => pixelAppearance({ ...look, bodyMode: 'custom' }, equipment), [look, equipment]);
   const dirs: Direction[] = ['down', 'left', 'up', 'right'];
@@ -170,7 +172,6 @@ export function LookStep({ look, setLook, equipment = STARTER_GEAR, showTitle = 
     <>
       {showTitle && <StepTitle title="Create your hero" body="Make them look like you, or not at all. You can change this any time." />}
       <div className="relative mb-6 flex h-60 items-end justify-center overflow-hidden rounded-[24px]" style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--indigo) 20%, var(--card)) 0%, var(--card) 70%)' }}>
-        <div className="absolute bottom-6 h-3 w-24 rounded-[50%] bg-black/15 blur-[2px]" />
         <div className="mb-7">
           <HeroSprite appearance={preview} anim="idle" dir={dir} scale={6} />
         </div>
@@ -235,74 +236,56 @@ function Label({ children }: { children: React.ReactNode }) {
   return <div className="mb-2 px-1 text-footnote font-semibold uppercase text-label2">{children}</div>;
 }
 
-function DayPicker({ days, onChange }: { days: number[]; onChange: (d: number[]) => void }) {
-  return (
-    <div className="flex gap-1.5">
-      {WEEKDAY_SHORT.map((l, d) => {
-        const on = days.includes(d);
-        return (
-          <button
-            key={d}
-            aria-label={`Toggle day ${d}`}
-            aria-pressed={on}
-            onClick={() => {
-              haptic();
-              const nextDays = on ? days.filter((x) => x !== d) : [...days, d].sort();
-              if (nextDays.length) onChange(nextDays);
-            }}
-            className="pressable flex h-9 w-9 items-center justify-center rounded-full text-footnote font-semibold"
-            style={{ background: on ? 'var(--tint)' : 'var(--fill2)', color: on ? '#fff' : 'var(--label2)' }}
-          >
-            {l}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-export { DayPicker };
-
 function HabitsStep({ picks, setPicks }: { picks: Pick[]; setPicks: (p: Pick[]) => void }) {
   const [custom, setCustom] = useState('');
+  const [schedule, setSchedule] = useState<Schedule>(DEFAULT_SCHEDULE);
   const [editing, setEditing] = useState<number | null>(null);
-  const preview = custom.trim().length >= 2 ? classifyHabit(custom.trim()) : null;
+  const [ideas, setIdeas] = useState(false);
+  const name = custom.trim();
+  const preview = name.length >= 2 ? classifyHabit(name) : null;
   const full = picks.length >= 5;
-  const has = (n: string) => picks.some((p) => p.name.toLowerCase() === n.toLowerCase());
-  const add = (p: Pick) => {
-    if (full || has(p.name)) return;
+  const duplicate = picks.some((p) => p.name.toLowerCase() === name.toLowerCase());
+  const canAdd = Boolean(preview) && !full && !duplicate && scheduleValid(schedule);
+
+  const add = () => {
+    if (!canAdd) return;
     sfx.tap();
     haptic();
-    setPicks([...picks, p]);
+    setPicks([...picks, { name, schedule }]);
+    setCustom('');
+    setSchedule(DEFAULT_SCHEDULE);
+    setEditing(null);
   };
 
   return (
     <>
-      <StepTitle title="Pick 1 to 5 habits" body="Start small. These become your Main Habits and drive your first quests." />
+      <StepTitle title="What will you work on?" body="Add habits in your own words and choose when each one repeats. You can change everything later." />
 
       {picks.length > 0 && (
         <Section header={`Your habits · ${picks.length}/5`}>
           {picks.map((p, i) => {
             const c = classifyHabit(p.name);
             return (
-              <div key={p.name} className="group">
+              <div key={p.name}>
                 <div className="flex items-center gap-3 py-2 pl-4 pr-2">
                   <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] text-[16px]" style={{ background: `color-mix(in srgb, ${categoryColor(c.kind === 'avoid' ? 'avoid' : c.category)} 20%, transparent)` }}>
                     {categoryEmoji(c.kind === 'avoid' ? 'avoid' : c.category)}
                   </span>
-                  <button className="min-w-0 flex-1 text-left" onClick={() => setEditing(editing === i ? null : i)}>
+                  <button className="min-w-0 flex-1 py-1 text-left" onClick={() => setEditing(editing === i ? null : i)} aria-expanded={editing === i}>
                     <div className="truncate text-body">{p.name}</div>
                     <div className="text-footnote text-label2">
-                      {c.kind === 'avoid' ? 'Avoid' : CATEGORY_INFO[c.category].name} · {daysLabel(p.days)}
+                      {c.kind === 'avoid' ? 'Avoid' : CATEGORY_INFO[c.category].name} · {scheduleLabel(p.schedule)}
                     </div>
                   </button>
-                  <button aria-label={`Remove ${p.name}`} onClick={() => setPicks(picks.filter((_, j) => j !== i))} className="pressable flex h-11 w-11 items-center justify-center text-ired">
-                    <Icon.Minus size={20} strokeWidth={2.5} />
+                  <button aria-label={`Remove ${p.name}`} onClick={() => setPicks(picks.filter((_, j) => j !== i))} className="pressable flex h-11 w-11 items-center justify-center">
+                    <span className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-ired text-white">
+                      <Icon.Minus size={14} strokeWidth={3} />
+                    </span>
                   </button>
                 </div>
                 {editing === i && (
                   <div className="px-4 pb-3">
-                    <DayPicker days={p.days} onChange={(d) => setPicks(picks.map((x, j) => (j === i ? { ...x, days: d } : x)))} />
+                    <ScheduleEditor value={p.schedule} onChange={(next) => setPicks(picks.map((x, j) => (j === i ? { ...x, schedule: next } : x)))} />
                   </div>
                 )}
                 {i < picks.length - 1 && <div className="ml-16 h-px bg-sep" />}
@@ -312,69 +295,55 @@ function HabitsStep({ picks, setPicks }: { picks: Pick[]; setPicks: (p: Pick[]) 
         </Section>
       )}
 
-      <Section header="Add your own" footer={preview ? undefined : 'Write it how you would say it, like “walk after lunch” or “no soda”.'}>
-        <div className="flex items-center pr-2">
-          <TextField
-            value={custom}
-            onChange={setCustom}
-            placeholder="e.g. Stretch for 10 minutes"
-            maxLength={60}
-            onSubmit={() => {
-              if (preview && !full) {
-                add({ name: custom.trim(), days: [0, 1, 2, 3, 4, 5, 6] });
-                setCustom('');
-              }
-            }}
-          />
-          <Button
-            size="small"
-            variant="tinted"
-            disabled={!preview || full}
-            onClick={() => {
-              add({ name: custom.trim(), days: [0, 1, 2, 3, 4, 5, 6] });
-              setCustom('');
-            }}
-          >
-            Add
-          </Button>
-        </div>
+      <Section header={picks.length ? 'Add another' : 'Your first habit'} footer={preview ? undefined : 'Write it how you would say it, like “walk after lunch” or “no soda”.'}>
+        <TextField value={custom} onChange={setCustom} placeholder="e.g. Stretch for 10 minutes" maxLength={60} onSubmit={add} label="Habit name" />
         {preview && (
-          <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
-            <Chip color={categoryColor(preview.kind === 'avoid' ? 'avoid' : preview.category)}>
-              {categoryEmoji(preview.kind === 'avoid' ? 'avoid' : preview.category)} {preview.kind === 'avoid' ? 'Avoid habit' : CATEGORY_INFO[preview.category].name}
-            </Chip>
-            <span className="text-caption text-label2">
-              Trains {STAT_INFO[preview.kind === 'avoid' ? 'discipline' : CATEGORY_INFO[preview.category].stat].name}
-            </span>
+          <div className="flex flex-col gap-3 px-4 pb-4 pt-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip color={categoryColor(preview.kind === 'avoid' ? 'avoid' : preview.category)}>
+                {categoryEmoji(preview.kind === 'avoid' ? 'avoid' : preview.category)} {preview.kind === 'avoid' ? 'Avoid habit' : CATEGORY_INFO[preview.category].name}
+              </Chip>
+              <span className="text-caption text-label2">Trains {STAT_INFO[preview.kind === 'avoid' ? 'discipline' : CATEGORY_INFO[preview.category].stat].name}</span>
+            </div>
+            <ScheduleEditor value={schedule} onChange={setSchedule} />
+            {duplicate && <p className="text-footnote text-ired">You already added this one.</p>}
+            <Button disabled={!canAdd} onClick={add} className="w-full">
+              Add Habit
+            </Button>
           </div>
         )}
       </Section>
 
-      <Label>Popular picks</Label>
-      <div className="flex flex-wrap gap-2">
-        {HABIT_SUGGESTIONS.map((s) => {
-          const on = has(s.name);
-          return (
-            <button
-              key={s.name}
-              disabled={!on && full}
-              onClick={() => (on ? setPicks(picks.filter((p) => p.name !== s.name)) : add({ name: s.name, days: s.days, kind: s.kind }))}
-              className={cx('pressable flex items-center gap-1.5 rounded-full px-3.5 py-2 text-subhead disabled:opacity-40', on ? 'text-white' : 'bg-card')}
-              style={on ? { background: 'var(--tint)' } : undefined}
-            >
-              <span>{categoryEmoji(s.kind === 'avoid' ? 'avoid' : s.category)}</span>
-              {s.name}
-              {on && <Icon.Check size={14} strokeWidth={3} />}
-            </button>
-          );
-        })}
-      </div>
+      {!full && (
+        <div className="mb-4">
+          <button onClick={() => setIdeas((v) => !v)} aria-expanded={ideas} className="pressable flex items-center gap-1 px-1 text-subhead text-tint">
+            Need ideas?
+            <Icon.ChevronDown size={16} strokeWidth={2.5} className={cx('transition-transform', ideas && 'rotate-180')} />
+          </button>
+          {ideas && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {HABIT_IDEAS.map((idea) => (
+                <button
+                  key={idea}
+                  onClick={() => {
+                    haptic();
+                    setCustom(idea);
+                  }}
+                  className="pressable rounded-full bg-card px-3.5 py-2 text-subhead"
+                >
+                  {idea}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }
 
 function Ready({ username, look, picks, error }: { username: string; look: Look; picks: Pick[]; error: string | null }) {
-  const preview = useMemo(() => pixelAppearance({ ...look, bodyMode: 'custom' }, STARTER_GEAR), [look]);
+  const preview = useMemo(() => pixelAppearance({ ...look, bodyMode: 'custom' }, NO_GEAR), [look]);
   return (
     <div className="pt-4 text-center">
       <div className="mx-auto flex h-48 w-48 items-end justify-center rounded-full" style={{ background: 'radial-gradient(circle, color-mix(in srgb, var(--yellow) 35%, transparent), transparent 70%)' }}>
@@ -383,7 +352,7 @@ function Ready({ username, look, picks, error }: { username: string; look: Look;
         </div>
       </div>
       <h1 className="mt-4 font-rounded text-title1">{username}</h1>
-      <p className="mt-1 text-subhead text-label2">Level 1 Adventurer · Traveler&apos;s gear</p>
+      <p className="mt-1 text-subhead text-label2">Level 1 Adventurer · Gear is earned as you go</p>
       <div className="mt-6 rounded-card bg-card p-4 text-left">
         <div className="mb-2 text-footnote font-semibold uppercase text-label2">Starting with</div>
         {picks.map((p) => {
@@ -392,7 +361,7 @@ function Ready({ username, look, picks, error }: { username: string; look: Look;
             <div key={p.name} className="flex items-center gap-2 py-1 text-body">
               <span>{categoryEmoji(c.kind === 'avoid' ? 'avoid' : c.category)}</span>
               <span className="flex-1 truncate">{p.name}</span>
-              <span className="text-footnote text-label2">{daysLabel(p.days)}</span>
+              <span className="text-footnote text-label2">{scheduleLabel(p.schedule)}</span>
             </div>
           );
         })}

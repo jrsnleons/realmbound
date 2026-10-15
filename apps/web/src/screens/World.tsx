@@ -137,8 +137,8 @@ export function WorldScreen() {
             }}
             options={ZONE_ORDER.map((z) => ({ value: z, label: unlocked(z) ? ZONE_SHORT[z] : `🔒 ${ZONE_SHORT[z]}` }))}
           />
-          <div className="flex items-center justify-between px-2 pb-0.5 pt-1.5 text-caption text-label2">
-            <span className="truncate">{ZONES[zone].blurb}</span>
+          <div className="flex items-start justify-between gap-2 px-2 pb-0.5 pt-1.5 text-caption text-label2">
+            <span className="line-clamp-2">{ZONES[zone].blurb}</span>
             {zone !== 'player_room' && (
               <span className="ml-2 flex shrink-0 items-center gap-1 font-semibold">
                 <span className="h-1.5 w-1.5 rounded-full bg-igreen" />

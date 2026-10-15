@@ -185,7 +185,7 @@ function Moment({ item, onDone }: { item: FeedItem; onDone: () => void }) {
     accent = 'var(--red)';
   } else if (item.kind === 'loot') {
     const def = ITEM_BY_ID[item.itemId];
-    accent = def ? TIER_COLOR[def.tier] : 'var(--tint)';
+    accent = def && def.tier !== 'common' ? TIER_COLOR[def.tier] : 'var(--tint)';
     title = def?.name ?? 'Loot';
     body = def ? `${def.tier[0]!.toUpperCase()}${def.tier.slice(1)} · ${def.description}` : '';
     art = (

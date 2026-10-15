@@ -11,7 +11,7 @@ import { HeroSprite } from '@/ui/Sprite';
 
 let initialAuthTab: 'signUp' | 'signIn' = 'signUp';
 
-const WELCOME_LOOK = { ...DEFAULT_APPEARANCE, equipment: { head: 'traveler_head', chest: 'traveler_chest', weapon: 'traveler_weapon' } } as typeof DEFAULT_APPEARANCE;
+const WELCOME_LOOK = DEFAULT_APPEARANCE;
 
 export function Welcome() {
   const { chooseLocal, chooseRemote } = useGame();

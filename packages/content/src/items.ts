@@ -34,7 +34,7 @@ export interface ItemDef {
 export type EquipmentSet = 'traveler' | 'forest_scout' | 'iron_guardian' | 'scholar' | 'dreamwalker' | 'warden';
 
 export const EQUIPMENT_SETS: Record<EquipmentSet, { name: string; tier: Tier; blurb: string }> = {
-  traveler: { name: 'Traveler', tier: 'common', blurb: 'Plain, sturdy gear for a new adventurer.' },
+  traveler: { name: 'Traveler', tier: 'common', blurb: 'Plain, sturdy gear. Your first pieces are earned in your first week.' },
   forest_scout: { name: 'Forest Scout', tier: 'uncommon', blurb: 'Light leathers for those who walk the woods.' },
   scholar: { name: 'Scholar', tier: 'uncommon', blurb: 'Robes for the patient and the curious.' },
   iron_guardian: { name: 'Iron Guardian', tier: 'rare', blurb: 'Forged plate for the steadfast.' },
@@ -61,7 +61,7 @@ const SET_EFFECTS: Record<EquipmentSet, Record<'head' | 'chest' | 'weapon' | 'ba
 };
 
 const SET_SOURCES: Record<EquipmentSet, { sources: ItemSource[]; price?: number; lootWeight: number }> = {
-  traveler: { sources: ['starter', 'shop'], price: 40, lootWeight: 0 },
+  traveler: { sources: ['achievement', 'shop'], price: 40, lootWeight: 0 },
   forest_scout: { sources: ['shop', 'craft', 'loot'], price: 160, lootWeight: 10 },
   scholar: { sources: ['shop', 'craft', 'loot'], price: 160, lootWeight: 10 },
   iron_guardian: { sources: ['craft', 'loot'], lootWeight: 4 },
@@ -199,4 +199,5 @@ export const RECIPES: Recipe[] = ITEMS.filter((i) => i.sources.includes('craft')
   level: i.tier === 'rare' ? 6 : 3,
 }));
 
-export const STARTER_ITEMS = ['traveler_head', 'traveler_chest', 'traveler_weapon'];
+/** Heroes begin with nothing equipped. Their first gear is earned through the first achievements. */
+export const STARTER_ITEMS: string[] = [];

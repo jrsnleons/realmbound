@@ -61,7 +61,6 @@ export function createInitialState(opts: {
     appearance: { ...DEFAULT_APPEARANCE, ...opts.appearance },
     feed: [],
   };
-  state.equipment = { head: 'traveler_head', chest: 'traveler_chest', weapon: 'traveler_weapon' };
   const q = initiationQuest(state, 1, opts.today);
   if (q) state.quests.push(q);
   state.chronicle.push(snapshot(state, opts.today, 'Day 1', 'A new name was written in the Guild ledger.'));

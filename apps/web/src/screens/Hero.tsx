@@ -59,7 +59,6 @@ export function HeroScreen() {
             ))}
           </div>
           <div className="relative flex h-52 w-36 items-end justify-center">
-            <div className="absolute bottom-1 h-3 w-20 rounded-[50%] bg-black/15" />
             <HeroSprite appearance={look} scale={6} condition={conditionOf(state)} />
           </div>
           <div className="flex flex-col gap-2">

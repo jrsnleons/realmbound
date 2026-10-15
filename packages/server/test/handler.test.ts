@@ -34,6 +34,23 @@ async function onboard(t: ReturnType<typeof setup>, user = ALICE, username = 'al
 }
 
 describe('game server', () => {
+  it('starts heroes with nothing equipped and supports flexible weekly habits', async () => {
+    const t = setup();
+    const r = ok(await t.call(ALICE, 'createPlayer', { username: 'fresh_hero', habits: [{ name: 'Go for a run', perWeek: 3 }, { name: 'Read', days: [2, 4] }] }));
+    const view = (r as unknown as { view: { state: { equipment: object; inventory: object }; habits: { name: string; days: number[]; perWeek?: number }[] } }).view;
+    expect(view.state.equipment).toEqual({});
+    expect(view.state.inventory).toEqual({});
+    const run = view.habits.find((h) => h.name === 'Go for a run')!;
+    expect(run.perWeek).toBe(3);
+    expect(run.days).toEqual([]);
+    expect(view.habits.find((h) => h.name === 'Read')!.perWeek).toBeUndefined();
+    const habitId = (view.habits[0] as unknown as { id: string }).id;
+    const switched = ok(await t.call(ALICE, 'updateHabit', { habitId, patch: { days: [1, 3, 5], perWeek: null } }, 'k1'));
+    const after = (switched as unknown as { view: { habits: { id: string; days: number[]; perWeek?: number }[] } }).view.habits.find((h) => h.id === habitId)!;
+    expect(after.perWeek).toBeUndefined();
+    expect(after.days).toEqual([1, 3, 5]);
+  });
+
   it('asks new users to onboard, then creates a hero with classified habits', async () => {
     const t = setup();
     expect(await t.call(ALICE, 'me')).toEqual({ ok: true, needsOnboarding: true });
