@@ -28,6 +28,7 @@ export interface Habit {
   weeklyTarget?: number;
   /** Optional measured goal, e.g. "30" minutes. */
   goalMinutes?: number;
+  sortOrder?: number;
 }
 
 /** What happened to a habit on a given day. */
