@@ -1,0 +1,19 @@
+{
+  "name": "realmbound",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "pnpm --filter web dev",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "build:function": "node scripts/build-function.mjs",
+    "simulate": "pnpm --filter @realmbound/game-engine simulate"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.8",
+    "typescript": "5.9.3",
+    "esbuild": "^0.28.2"
+  }
+}
