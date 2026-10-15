@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+dist
+.turbo
+*.log
+.env*
+!.env.example
+.DS_Store
+coverage
+supabase/functions/game/game.js
+# Public client config (publishable key is safe to ship)
+!apps/web/.env.production
+*.tsbuildinfo
